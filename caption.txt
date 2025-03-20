@@ -1,0 +1,56 @@
+音频转字幕API说明文档
+创建日期: 2025年3月20日
+
+1. 音频转字幕接口
+请求方法: POST
+请求路径: /audio_to_subtitles
+描述: 将上传的音频文件转换为字幕文件（SRT格式）
+
+请求参数:
+- file: 音频文件
+  格式: MP3/WAV等（由ffmpeg支持的格式）
+  描述: 需要转换为字幕的源音频文件
+- language: 语音语言
+  默认值: "zh"
+  描述: 音频的语言，例如 "zh" (中文), "en" (英文)
+- model_size: 模型大小
+  默认值: "medium"
+  描述: 使用 faster_whisper 模型的大小，可选值: "tiny", "base", "small", "medium", "large"
+
+响应:
+成功:
+  状态码: 200
+  内容类型: text/plain
+  返回值: 生成的字幕文本 (SRT 格式)
+  示例:
+    1
+    00:00:00,000 --> 00:00:02,500
+    你好，这是一个测试
+
+    2
+    00:00:02,501 --> 00:00:05,000
+    欢迎使用音频转字幕服务
+失败:
+状态码: 400 或 500
+内容类型: application/json
+返回值示例:
+{
+  "error": "音频文件不存在" 或 "发生错误：具体错误描述"
+}
+
+示例请求:
+curl -X POST \
+-F "file=@sample.mp3" \
+-F "language=zh" \
+-F "model_size=medium" \
+http://localhost:5000/audio_to_subtitles
+
+注意事项:
+1. 文件上传使用 multipart/form-data 格式
+2. 字幕文本使用简体中文输出（通过opencc t2s转换）
+3. 时间戳精度为毫秒级
+4. 每段音频按句号分句，平均分配时间
+5. 处理时间取决于音频长度和模型大小
+
+库依赖：
+pip install ffmpeg-python faster-whisper opencc-python-reimplemented
