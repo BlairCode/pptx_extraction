@@ -1,231 +1,352 @@
-# 课件内容提取与优化工具 (PPT_Text_Extractor)
+<div align="center">
 
-## 简介
-项目是一个基于 Python 的智能工具，旨在从多种 PPT 文件中提取文本和图片内容，并通过优化处理生成自然流畅的文本输出。利用 `python-pptx`、`win32com` 和 `PaddleOCR` 技术，支持幻灯片文本提取和图片文字识别，适用于教学文档整理或自动化处理。
+# pptx_extraction
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-yellow.svg)
+### 面向检索、RAG 与 Agent 的 PowerPoint 结构化内容提取工具
 
----
+[![CI](https://github.com/BlairCode/pptx_extraction/actions/workflows/ci.yml/badge.svg)](https://github.com/BlairCode/pptx_extraction/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Release](https://img.shields.io/github/v/release/BlairCode/pptx_extraction?include_prereleases)](https://github.com/BlairCode/pptx_extraction/releases)
+[![License](https://img.shields.io/badge/License-MIT-2ea44f)](LICENSE)
+[![Schema](https://img.shields.io/badge/Schema-1.0-6f42c1)](schemas/pptx-extraction.presentation.v1.schema.json)
 
-## 功能特点
-- 📄 **PPT 文本提取**：自动提取幻灯片的标题、段落和表格内容，支持 `.pptx` 和旧版格式（`.ppt`、`.pot`、`.pps`）。
-- 🖼️ **图片文本识别**：使用 PaddleOCR 从幻灯片图片中提取文字，支持多种 PowerPoint 文件格式。
-- ✍️ **文本优化**：将提取的内容优化为叙述性文本，便于阅读或后续使用。
-- 📋 **结构化输出**：按幻灯片分隔保存文本和图片内容。
-- ⚙️ **日志记录**：提供详细的处理日志，便于调试。
-- 🌐 **Web 支持**：通过 Flask 提供 Web 接口，可上传文件并获取优化结果。
+**默认离线 · 可追溯 · 跨平台 · CLI / Python API / HTTP API / Agent Skill**
+
+[快速开始](#快速开始) · [常用工作流](#常用工作流) · [输出说明](#输出说明) · [完整文档](#完整文档)
+
+</div>
 
 ---
 
-## 技术栈
-- **Python**: 3.8 或更高版本
-- **python-pptx**: 解析 `.pptx` 文件
-- **pywin32**: 处理旧版 PowerPoint 文件（`.ppt`、`.pot`、`.pps`）
-- **PaddleOCR**: 图片文本识别
-- **Flask**: Web 服务框架
-- **Spacy**: 自然语言处理（文本优化）
-- **Transformers**: AI 文本生成（优化衔接）
-- **logging**: 日志记录
+`pptx_extraction` 将 PowerPoint 文件转换为带来源定位的 JSON、Markdown 和纯文本。它不仅提取
+“看得见的文字”，还保留页码、段落层级、视觉阅读顺序、原始堆叠顺序、shape 信息、坐标、
+表格、图表数据、备注、链接、图片哈希与告警，适合知识库构建、内容迁移、无障碍审计和 Agent
+读取等需要可靠引用来源的场景。
 
----
+> 项目保持原仓库名称 `pptx_extraction`。安装包名称为 `pptx-extraction`，Python 导入名为
+> `pptx_extraction`，命令行入口为 `pptx-extraction`。
 
-## 安装步骤
+## 核心能力
 
-### 前置条件
-- Python 3.8 或以上版本
-- Git（用于克隆仓库）
-- Windows 系统（因使用 `win32com`，需安装 Microsoft PowerPoint）
-- 可选：GPU 支持（加速 PaddleOCR）
+| 能力 | 处理结果 |
+|---|---|
+| 文本与链接 | 标题/正文、段落层级、超链接、shape ID/name、坐标 |
+| 表格与图表 | 原生单元格、图表分类、序列名与数值；不使用 OCR 猜测数据 |
+| 图片与 OCR | SHA-256 命名、跨页去重、alt text、可选 Tesseract OCR |
+| 备注与隐藏页 | speaker notes 独立输出；隐藏页保留并标记 `hidden: true` |
+| 可追溯性 | 每个元素保留页码、阅读顺序、z-order 和归一化位置 |
+| 安全与隐私 | 不联网、不执行宏；检查 ZIP 路径穿越、压缩炸弹与异常包 |
+| 工程接口 | 单文件、批处理、Python API、异步 HTTP API、Agent Skill |
 
-### 安装依赖
-```bash
-# 1. 克隆项目仓库
-git clone https://github.com/blankboards/pptx_extraction.git
-cd pptx_extraction
-
-# 2. 创建并激活虚拟环境
-python -m venv venv
-# Unix/macOS
-source venv/bin/activate
-# Windows
-venv\Scripts\activate
-
-# 3. 安装依赖
-pip install -r requirements.txt
+```mermaid
+flowchart LR
+    A["PowerPoint OOXML"] --> B["安全校验"]
+    B --> C["文本 / 表格 / 图表 / 备注 / 图片"]
+    C --> D["统一结构化模型"]
+    C -. 可选 .-> O["Tesseract OCR"]
+    D --> J["JSON"]
+    D --> M["Markdown"]
+    D --> T["Text"]
+    J --> R["Search / RAG / Agent"]
+    M --> R
 ```
 
-### 依赖列表 (requirements.txt 示例)
-```
-python-pptx>=0.6.21
-paddlepaddle>=2.5.0
-paddleocr>=2.6.1
-pywin32>=306
-flask>=2.2.5
-flask-cors>=4.0.0
-python-dotenv>=1.0.0
-spacy>=3.7.2
-transformers>=4.35.2
-protobuf==3.20.3
-scikit-image>=0.21.0
-```
+## 支持范围
 
-### 额外步骤
-- 下载 Spacy 中文模型：
-```bash
-python -m spacy download zh_core_web_sm
-```
-
----
+| 文件类型 | 支持方式 |
+|---|---|
+| `.pptx` / `.pptm` / `.potx` / `.ppsx` | 直接解析；宏只检测、不执行 |
+| `.ppt` / `.pot` / `.pps` | 使用 `convert` 命令调用本机 LibreOffice 转换 |
+| `.pdf` | 不支持；请先使用 PDF 专用工具 |
+| SmartArt / OLE / 音视频 / 动画 | 可能只能得到部分信息，并在可检测时输出告警 |
 
 ## 快速开始
 
-### 命令行使用
-以下是如何提取和优化 PPT 内容的示例：
+下面的命令可以直接复制。示例输入为 `slides.pptx`，请替换为你的真实文件路径。
+
+### 1. 克隆并进入现有仓库
+
+```bash
+git clone https://github.com/BlairCode/pptx_extraction.git
+cd pptx_extraction
+```
+
+### 2. 创建虚拟环境
+
+Windows PowerShell：
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
+Linux / macOS：
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
+确认安装成功：
+
+```bash
+pptx-extraction --version
+```
+
+预期输出：
+
+```text
+pptx_extraction 2.0.0
+```
+
+### 3. 校验并提取第一份 PPTX
+
+```bash
+pptx-extraction validate "slides.pptx"
+pptx-extraction extract "slides.pptx" \
+  --output "output/slides" \
+  --format json \
+  --format markdown \
+  --format text \
+  --redact-metadata
+```
+
+PowerShell 如果不使用反引号续行，建议直接写成一行：
+
+```powershell
+pptx-extraction extract "slides.pptx" --output "output/slides" --format json --format markdown --format text --redact-metadata
+```
+
+首次运行后会得到：
+
+```text
+output/slides/
+├── presentation.json     # 完整结构化数据，适合程序、RAG 与 Agent
+├── presentation.md       # 按页整理，适合阅读和快速检查
+├── presentation.txt      # 无 Markdown 标记的纯文本
+└── assets/               # 按内容哈希命名并去重的嵌入图片
+```
+
+再次写入同一非空目录时，程序会保护已有文件并停止。确认该目录可以替换后再加：
+
+```bash
+pptx-extraction extract "slides.pptx" -o "output/slides" --overwrite
+```
+
+## 输出说明
+
+`presentation.json` 是最完整的结果。常用字段如下：
+
+| 字段 | 含义 |
+|---|---|
+| `schema_version` | 当前数据契约版本，现为 `1.0` |
+| `source_sha256` | 输入文件内容哈希，用于区分不同版本 |
+| `slides[].number` | 1 开始的幻灯片页码 |
+| `slides[].text_blocks` | 标题/正文、层级、链接与来源 shape |
+| `slides[].tables` | 表格二维单元格数据 |
+| `slides[].charts` | 图表标题、分类、序列和数值 |
+| `slides[].images` | 图片哈希、路径、alt text 与可选 OCR |
+| `slides[].notes` | 演讲者备注，不与正文混合 |
+| `order` / `z_order` | 视觉阅读顺序 / PowerPoint 原始堆叠顺序 |
+| `bbox` | points 坐标和 0–1 归一化坐标 |
+| `warnings` | 缺少 alt text、宏、未支持对象等限制 |
+
+完整约束见 [JSON Schema](schemas/pptx-extraction.presentation.v1.schema.json)。
+
+## 常用工作流
+
+### 只检查内容概况，不生成文件
+
+```bash
+pptx-extraction inspect "slides.pptx"
+```
+
+输出完整 JSON 记录，同时隐藏作者等元数据：
+
+```bash
+pptx-extraction inspect "slides.pptx" --full --redact-metadata
+```
+
+### 批量处理目录
+
+递归发现目录中的受支持文件，使用 4 个工作线程：
+
+```bash
+pptx-extraction batch "./decks" --output "./output" --workers 4 --redact-metadata
+```
+
+同时传入多个文件或目录：
+
+```bash
+pptx-extraction batch "deck-a.pptx" "deck-b.pptx" "./more-decks" -o "./output"
+```
+
+每个输入会写入独立目录，目录名包含源文件哈希前缀；单个文件失败不会中断其他任务。只要有一项
+失败，命令退出码为 `4`，失败原因会写在终端 JSON 中。
+
+### 识别嵌入图片中的文字
+
+先安装 Python OCR 适配器：
+
+```bash
+python -m pip install -e ".[ocr]"
+```
+
+再安装系统级 Tesseract 和所需语言包，然后运行：
+
+```bash
+pptx-extraction extract "slides.pptx" -o "output/ocr" \
+  --ocr tesseract \
+  --ocr-language "chi_sim+eng"
+```
+
+OCR 只处理 PPTX 中的嵌入图片，不会渲染整页幻灯片。同一图片即使跨页重复，也只识别一次。
+
+### 转换旧版 `.ppt`
+
+先安装 LibreOffice，并确保 `soffice` 在 `PATH` 中：
+
+```bash
+pptx-extraction convert "legacy.ppt" --output "converted"
+pptx-extraction extract "converted/legacy.pptx" --output "output/legacy"
+```
+
+如果 `soffice` 不在 `PATH`，Windows 可显式指定：
+
+```powershell
+pptx-extraction convert "legacy.ppt" -o "converted" --soffice "$env:ProgramFiles\LibreOffice\program\soffice.exe"
+```
+
+### Python API
+
 ```python
-from main import process_ppt_file
+from pptx_extraction import ExtractionOptions, extract_file
 
-# 指定 PPT 文件路径
-ppt_path = 'sample.ppt'  # 支持 .ppt 和 .pptx
+result = extract_file(
+    "slides.pptx",
+    "output/python-api",
+    options=ExtractionOptions(
+        include_assets=True,
+        include_notes=True,
+        redact_metadata=True,
+    ),
+    formats=("json", "markdown", "text"),
+)
 
-# 处理 PPT 并生成优化文本
-process_ppt_file(ppt_path)
-print("优化文本已保存至 output/optimized_output.txt")
+print(result.output_dir)
+print(result.record.summary)
 ```
 
-### Web 使用
-1. 运行 Web 服务：
+### HTTP API
+
+安装并启动：
+
 ```bash
-python app.py
-```
-2. 打开浏览器，访问 `http://localhost:5000/`，上传 PPT 文件获取优化结果。
-
-### 输出示例
-```
-Title: N/A
-Author: huawei
-
-现在我们来看看第 1 张幻灯片：
-首先是 深度学习基础。
-这里有个重点 本课程将深入讲解深度学习的基本原理。
+python -m pip install -e ".[api]"
+uvicorn pptx_extraction.api:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
----
+新开一个 PowerShell 窗口上传文件并轮询结果：
 
-## 配置参数
+```powershell
+$job = curl.exe -s -X POST -F "file=@slides.pptx" http://127.0.0.1:8000/v1/jobs | ConvertFrom-Json
+$job
 
-### 主函数参数
-| 参数名       | 类型  | 默认值        | 描述                     |
-|--------------|-------|---------------|--------------------------|
-| `file_path`  | `str` | 必填          | PPT 文件路径             |
-| `output_dir` | `str` | `'output'`    | 输出目录（定义在 config.py） |
+$status = $null
+do {
+  Start-Sleep -Seconds 1
+  $status = curl.exe -s "http://127.0.0.1:8000/v1/jobs/$($job.id)" | ConvertFrom-Json
+  $status
+} while ($status.status -in @("queued", "running"))
 
-### 可调整配置 (config.py)
-- `OUTPUT_DIR`: 输出文本和图片的目录（命令行模式）
-- `OUTPUT_DIR_2`: Web 模式输出目录
-- `PPTX_FILE`: 默认处理的 PPT 文件路径（命令行模式）
-- `PPTX_FILE_2`: 备用 PPT 文件路径
+if ($status.status -ne "succeeded") {
+  throw "Extraction failed: $($status.error)"
+}
 
----
-
-## 项目结构
-```
-PPT_Text_Extractor/
-├── modules/                 # 功能模块目录
-│   ├── __init__.py          # 包初始化文件
-│   ├── ppt_text_extraction.py  # PPT 文本和元数据提取模块
-│   ├── image_extraction_p.py   # 图片文本提取模块（PaddleOCR）
-│   ├── image_extraction_t.py   # Tesseract 图片文本提取（未使用）
-│   ├── ai_optimizer.py         # 文本优化模块
-│   ├── utils.py                # 工具函数
-│   └── config.py               # 配置文件
-├── static/                  # Web 静态文件目录
-│   └── index.html           # 前端界面
-├── output/                  # 输出目录示例（运行时生成）
-│   ├── slide_1/             # 幻灯片 1 的输出
-│   │   ├── image/           # 图片文件目录
-│   │   │   ├── image_1.jpg  # 提取的图片
-│   │   │   └── slide_1_image_1_text.txt  # 图片识别文本
-│   │   └── slide_1_texts.txt  # 幻灯片文本
-│   └── optimized_output.txt # 优化后的文本（命令行模式）
-├── app.py                   # Web 服务脚本
-├── main.py                  # 命令行入口脚本
-├── test.py                  # 测试脚本
-├── requirements.txt         # 依赖列表
-├── .env                     # 环境变量配置（注意敏感信息）
-├── .gitignore               # 忽略文件配置
-└── README.md                # 项目说明文档
+curl.exe -s "http://127.0.0.1:8000/v1/jobs/$($job.id)/result" -o presentation.json
 ```
 
----
+状态为 `succeeded` 后才能读取结果。接口说明和生产部署边界见 [docs/api.md](docs/api.md)。
 
-## 使用指南
+## CLI 速查
 
-### 运行步骤（命令行）
-1. 准备一个 PPT 文件（如 `sample.pptx` 或 `sample.ppt`）。
-2. 在 `config.py` 中设置 `PPTX_FILE_2` 为你的文件路径。
-3. 运行：
+| 命令 | 用途 | 是否写文件 |
+|---|---|---|
+| `pptx-extraction validate FILE` | 检查格式、OOXML 结构与安全限制 | 否 |
+| `pptx-extraction inspect FILE` | 查看页数和元素统计 | 否 |
+| `pptx-extraction extract FILE -o DIR` | 提取单个文件 | 是 |
+| `pptx-extraction batch INPUT... -o DIR` | 并发批处理文件/目录 | 是 |
+| `pptx-extraction convert FILE.ppt -o DIR` | 通过 LibreOffice 转换旧格式 | 是 |
+| `pptx-extraction COMMAND --help` | 查看某个命令的全部参数 | 否 |
+
+稳定退出码：`0` 成功，`2` 参数/输入问题，`3` 提取失败，`4` 批处理部分失败，`5` 缺少可选依赖。
+
+## Agent Skill
+
+可复用 Skill 位于 [`agent-skill/pptx-extraction`](agent-skill/pptx-extraction)：
+
 ```bash
-python main.py
+python agent-skill/pptx-extraction/scripts/extract.py \
+  "slides.pptx" \
+  --output "output/agent-run"
 ```
-4. 查看 `output/optimized_output.txt` 中的结果。
 
-### 运行步骤（Web）
-1. 运行 Web 服务：
+它会默认脱敏作者类元数据，并指导 Agent 区分正文、备注、图表值和 OCR 派生文本。Skill 已通过官方
+`quick_validate.py`，发布脚本会将项目和 Skill 生成两个独立 ZIP。
+
+## 开发与验证
+
 ```bash
-python app.py
+python -m pip install -e ".[dev,api]"
+ruff check .
+ruff format --check .
+mypy src/pptx_extraction
+pytest
+python -m build
+python scripts/privacy_scan.py
+python scripts/build_release.py
 ```
-2. 访问 `http://localhost:5000/`，上传 PPT 文件。
-3. 查看返回的优化文本或 `output/optimized_output_*.txt`。
 
-### 自定义输出
-- 修改 `ai_optimizer.py` 调整文本优化逻辑。
-- 在 `config.py` 中更改 `OUTPUT_DIR_2` 设置输出路径。
+测试在运行时合成 PPTX，不提交真实演示文稿、导出图片或个人音频。CI 覆盖 Python 3.10–3.12。
 
----
+<details>
+<summary><strong>常见问题：输出目录已存在</strong></summary>
 
-## 常见问题 (FAQ)
+程序不会默认覆盖非空目录。选择新的 `--output`，或确认目录只包含本次旧结果后添加
+`--overwrite`。不要对工作区根目录、用户目录或不确定的路径使用覆盖选项。
 
-1. **支持哪些文件格式？**
-- 支持 `.pptx`、`.pptm`、`.potx`、`.ppsx`（使用 `python-pptx`）。
-- 支持 `.ppt`、`.pot`、`.pps`（使用 `pywin32`，需 Windows 和 PowerPoint）。
-- `.pdf` 暂未完全支持，可后续扩展。
+</details>
 
-2. **图片文本识别不准确怎么办？**
-- 确保图片清晰，调整 PaddleOCR 的置信度阈值（`process_image_for_ocr`）。
+<details>
+<summary><strong>常见问题：PPTX 中明明有内容，但结果缺失</strong></summary>
 
-3. **处理速度慢怎么办？**
-- 启用 GPU（安装 `paddlepaddle-gpu`）。
-- 减少幻灯片中的图片数量。
+检查 `warnings`。SmartArt、公式、OLE、动画、音视频和图片型整页可能没有可直接读取的语义。
+图片中的文字可尝试 Tesseract；整页图片型幻灯片需要额外的渲染/整页 OCR 工具。
 
-4. **依赖安装失败怎么办？**
-- 检查网络，运行 `pip install --upgrade pip`。
-- 确保 Python 版本 >= 3.8，Protobuf 版本为 3.20.3。
+</details>
 
----
+<details>
+<summary><strong>常见问题：OCR 或 LibreOffice 不可用</strong></summary>
 
-## 许可证
-本项目采用 [MIT License](https://opensource.org/licenses/MIT)，欢迎使用和修改。
+OCR 同时需要 `.[ocr]`、Tesseract 可执行程序和语言包。旧版 PPT 转换需要 LibreOffice 的
+`soffice`。这两项都是可选依赖，不影响普通 `.pptx` 文本提取。
 
----
+</details>
 
-## 贡献指南
-欢迎贡献代码或建议！
-- **报告问题**：提交 GitHub Issue。
-- **提交代码**：Fork 仓库并创建 Pull Request。
-- **规范**：遵循 PEP 8，添加注释。
+## 完整文档
 
-### 贡献流程
-1. Fork 仓库。
-2. 创建分支（`git checkout -b feature/xxx`）。
-3. 提交更改（`git commit -m "描述"`）。
-4. Push 到远程（`git push origin feature/xxx`）。
-5. 创建 Pull Request。
+- [需求分析与验收标准](docs/requirements.md)
+- [系统架构与模块职责](docs/architecture.md)
+- [旧项目审计与逐文件升级计划](docs/upgrade-plan.md)
+- [HTTP API](docs/api.md)
+- [安全策略](SECURITY.md)
+- [更新现有仓库与发布 Release](docs/release.md)
+- [参与贡献](CONTRIBUTING.md)
 
----
+## License
 
-## 联系方式
-- **邮箱**：zhanghoubing777@gmail.com
-- **GitHub**：https://github.com/BlairCode
+[MIT](LICENSE)

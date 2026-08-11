@@ -1,0 +1,4 @@
+interface:
+  display_name: "pptx_extraction"
+  short_description: "Extract traceable PowerPoint content for agents"
+  default_prompt: "Use $pptx-extraction to extract this deck into cited, structured content."
