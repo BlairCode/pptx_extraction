@@ -1,30 +1,45 @@
-# 忽略 Python 字节码文件
+# Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 *.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# 忽略虚拟环境
+# Environments and secrets
+.venv/
 venv/
 .env
+.env.*
+!.env.example
+*.pem
+*.key
 
-# 忽略输出目录
+# Builds and runtime data
+build/
+dist/
+release/
+work/
 output/
-*.txt  # 如果只想忽略特定输出文件，可改为 output/*.txt
-
-# 忽略日志文件
-logs/
+outputs/
+_legacy_local_backup/
 *.log
-
-# 忽略临时文件
 *.tmp
-*.swp
 
-# 忽略系统文件
-.DS_Store  # macOS
-Thumbs.db  # Windows
-
-# PPT
+# Office lock files and local presentation material
+~$*.ppt*
 *.ppt
 *.pptx
-PPT_SET/
+*.pptm
+*.potx
+*.ppsx
+!tests/fixtures/*.pptx
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
