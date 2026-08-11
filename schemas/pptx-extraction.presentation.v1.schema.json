@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/pptx-extraction.presentation.v1.schema.json",
+  "title": "pptx_extraction Presentation v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "source_name",
+    "source_sha256",
+    "source_size_bytes",
+    "slide_width_pt",
+    "slide_height_pt",
+    "metadata",
+    "slides",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "source_name": { "type": "string" },
+    "source_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "source_size_bytes": { "type": "integer", "minimum": 1 },
+    "slide_width_pt": { "type": "number", "minimum": 0 },
+    "slide_height_pt": { "type": "number", "minimum": 0 },
+    "metadata": { "type": "object" },
+    "slides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "number",
+          "hidden",
+          "text_blocks",
+          "tables",
+          "charts",
+          "images"
+        ],
+        "properties": {
+          "number": { "type": "integer", "minimum": 1 },
+          "title": { "type": ["string", "null"] },
+          "hidden": { "type": "boolean" },
+          "layout_name": { "type": ["string", "null"] },
+          "text_blocks": { "type": "array" },
+          "tables": { "type": "array" },
+          "charts": { "type": "array" },
+          "images": { "type": "array" },
+          "notes": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "warnings": { "type": "array" }
+  },
+  "additionalProperties": false
+}

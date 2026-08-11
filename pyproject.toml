@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pptx-extraction"
+version = "2.0.0"
+description = "Extract PowerPoint decks into traceable, AI-ready structured data."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "pptx_extraction contributors" }]
+keywords = ["powerpoint", "pptx", "extraction", "ocr", "rag", "agents"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Office/Business :: Office Suites",
+]
+dependencies = [
+  "python-pptx>=1.0.2,<2",
+  "Pillow>=10.3,<13",
+]
+
+[project.optional-dependencies]
+ocr = ["pytesseract>=0.3.13,<1"]
+api = [
+  "fastapi>=0.115,<1",
+  "python-multipart>=0.0.18,<1",
+  "uvicorn[standard]>=0.32,<1",
+]
+dev = [
+  "build>=1.2,<2",
+  "httpx2>=2.10,<3",
+  "mypy>=1.13,<2",
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.8,<1",
+]
+
+[project.scripts]
+pptx-extraction = "pptx_extraction.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/BlairCode/pptx_extraction"
+Issues = "https://github.com/BlairCode/pptx_extraction/issues"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --cov=pptx_extraction --cov-report=term-missing"
+testpaths = ["tests"]
