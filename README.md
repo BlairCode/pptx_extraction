@@ -2,7 +2,7 @@
 
 # pptx_extraction
 
-### 面向检索、RAG 与 Agent 的 PowerPoint 结构化内容提取工具
+### Traceable PowerPoint extraction for search, RAG, and AI agents
 
 [![CI](https://github.com/BlairCode/pptx_extraction/actions/workflows/ci.yml/badge.svg)](https://github.com/BlairCode/pptx_extraction/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -10,70 +10,74 @@
 [![License](https://img.shields.io/badge/License-MIT-2ea44f)](LICENSE)
 [![Schema](https://img.shields.io/badge/Schema-1.0-6f42c1)](schemas/pptx-extraction.presentation.v1.schema.json)
 
-**默认离线 · 可追溯 · 跨平台 · CLI / Python API / HTTP API / Agent Skill**
+**Offline by default · Source-aware · Cross-platform · CLI / Python API / HTTP API / Agent Skill**
 
-[快速开始](#快速开始) · [常用工作流](#常用工作流) · [输出说明](#输出说明) · [完整文档](#完整文档)
+[Quick start](#quick-start) · [Common workflows](#common-workflows) · [Output format](#output-format) · [Documentation](#documentation)
 
 </div>
 
 ---
 
-`pptx_extraction` 将 PowerPoint 文件转换为带来源定位的 JSON、Markdown 和纯文本。它不仅提取
-“看得见的文字”，还保留页码、段落层级、视觉阅读顺序、原始堆叠顺序、shape 信息、坐标、
-表格、图表数据、备注、链接、图片哈希与告警，适合知识库构建、内容迁移、无障碍审计和 Agent
-读取等需要可靠引用来源的场景。
+`pptx_extraction` converts PowerPoint presentations into source-aware JSON, Markdown, and
+plain text. It goes beyond visible text by preserving slide numbers, paragraph levels,
+visual reading order, original z-order, shape metadata, coordinates, tables, chart data,
+speaker notes, hyperlinks, image hashes, and extraction warnings.
 
-> 项目保持原仓库名称 `pptx_extraction`。安装包名称为 `pptx-extraction`，Python 导入名为
-> `pptx_extraction`，命令行入口为 `pptx-extraction`。
+The resulting data is designed for search indexing, RAG pipelines, knowledge-base ingestion,
+content migration, accessibility audits, and AI-agent workflows where every extracted item
+must remain traceable to its source.
 
-## 核心能力
+> The repository name is `pptx_extraction`. The distribution is `pptx-extraction`, the Python
+> package is `pptx_extraction`, and the command-line entry point is `pptx-extraction`.
 
-| 能力 | 处理结果 |
+## Highlights
+
+| Capability | What you get |
 |---|---|
-| 文本与链接 | 标题/正文、段落层级、超链接、shape ID/name、坐标 |
-| 表格与图表 | 原生单元格、图表分类、序列名与数值；不使用 OCR 猜测数据 |
-| 图片与 OCR | SHA-256 命名、跨页去重、alt text、可选 Tesseract OCR |
-| 备注与隐藏页 | speaker notes 独立输出；隐藏页保留并标记 `hidden: true` |
-| 可追溯性 | 每个元素保留页码、阅读顺序、z-order 和归一化位置 |
-| 安全与隐私 | 不联网、不执行宏；检查 ZIP 路径穿越、压缩炸弹与异常包 |
-| 工程接口 | 单文件、批处理、Python API、异步 HTTP API、Agent Skill |
+| Text and links | Titles, body text, paragraph levels, hyperlinks, shape IDs/names, and coordinates |
+| Tables and charts | Native cell values, chart categories, series names, and values—without OCR guesswork |
+| Images and OCR | SHA-256 asset names, cross-slide deduplication, alt text, and optional Tesseract OCR |
+| Notes and hidden slides | Speaker notes stored separately; hidden slides retained with `hidden: true` |
+| Traceability | Slide number, visual reading order, z-order, and normalized position for every element |
+| Security and privacy | No network access or macro execution; ZIP traversal, compression-bomb, and package checks |
+| Integration options | Single-file extraction, batch processing, Python API, asynchronous HTTP API, and Agent Skill |
 
 ```mermaid
 flowchart LR
-    A["PowerPoint OOXML"] --> B["安全校验"]
-    B --> C["文本 / 表格 / 图表 / 备注 / 图片"]
-    C --> D["统一结构化模型"]
-    C -. 可选 .-> O["Tesseract OCR"]
+    A["PowerPoint OOXML"] --> B["Safety validation"]
+    B --> C["Text / tables / charts / notes / images"]
+    C --> D["Unified structured model"]
+    C -. optional .-> O["Tesseract OCR"]
     D --> J["JSON"]
     D --> M["Markdown"]
-    D --> T["Text"]
-    J --> R["Search / RAG / Agent"]
+    D --> T["Plain text"]
+    J --> R["Search / RAG / agents"]
     M --> R
 ```
 
-## 支持范围
+## Supported formats
 
-| 文件类型 | 支持方式 |
+| File type | Support |
 |---|---|
-| `.pptx` / `.pptm` / `.potx` / `.ppsx` | 直接解析；宏只检测、不执行 |
-| `.ppt` / `.pot` / `.pps` | 使用 `convert` 命令调用本机 LibreOffice 转换 |
-| `.pdf` | 不支持；请先使用 PDF 专用工具 |
-| SmartArt / OLE / 音视频 / 动画 | 可能只能得到部分信息，并在可检测时输出告警 |
+| `.pptx` / `.pptm` / `.potx` / `.ppsx` | Parsed directly; macros are detected but never executed |
+| `.ppt` / `.pot` / `.pps` | Converted through a local LibreOffice installation with the `convert` command |
+| `.pdf` | Not supported; use a dedicated PDF extraction tool instead |
+| SmartArt / OLE / audio / video / animations | Information may be partial; detectable limitations are reported as warnings |
 
-## 快速开始
+## Quick start
 
-下面的命令可以直接复制。示例输入为 `slides.pptx`，请替换为你的真实文件路径。
+The commands below are ready to copy. Replace `slides.pptx` with the path to your presentation.
 
-### 1. 克隆并进入现有仓库
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/BlairCode/pptx_extraction.git
 cd pptx_extraction
 ```
 
-### 2. 创建虚拟环境
+### 2. Create a virtual environment and install
 
-Windows PowerShell：
+Windows PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -82,7 +86,7 @@ python -m pip install --upgrade pip
 python -m pip install -e .
 ```
 
-Linux / macOS：
+Linux or macOS:
 
 ```bash
 python3 -m venv .venv
@@ -91,19 +95,19 @@ python -m pip install --upgrade pip
 python -m pip install -e .
 ```
 
-确认安装成功：
+Verify the installation:
 
 ```bash
 pptx-extraction --version
 ```
 
-预期输出：
+Expected output:
 
 ```text
 pptx_extraction 2.0.0
 ```
 
-### 3. 校验并提取第一份 PPTX
+### 3. Validate and extract your first presentation
 
 ```bash
 pptx-extraction validate "slides.pptx"
@@ -115,113 +119,117 @@ pptx-extraction extract "slides.pptx" \
   --redact-metadata
 ```
 
-PowerShell 如果不使用反引号续行，建议直接写成一行：
+In PowerShell, run the extraction command on one line:
 
 ```powershell
 pptx-extraction extract "slides.pptx" --output "output/slides" --format json --format markdown --format text --redact-metadata
 ```
 
-首次运行后会得到：
+The first run creates:
 
 ```text
 output/slides/
-├── presentation.json     # 完整结构化数据，适合程序、RAG 与 Agent
-├── presentation.md       # 按页整理，适合阅读和快速检查
-├── presentation.txt      # 无 Markdown 标记的纯文本
-└── assets/               # 按内容哈希命名并去重的嵌入图片
+├── presentation.json     # Complete structured data for applications, RAG, and agents
+├── presentation.md       # Slide-by-slide content for reading and review
+├── presentation.txt      # Plain text without Markdown syntax
+└── assets/               # Deduplicated embedded images named by content hash
 ```
 
-再次写入同一非空目录时，程序会保护已有文件并停止。确认该目录可以替换后再加：
+The extractor refuses to write into an existing non-empty directory by default. After confirming
+that the directory can safely be replaced, add `--overwrite`:
 
 ```bash
 pptx-extraction extract "slides.pptx" -o "output/slides" --overwrite
 ```
 
-## 输出说明
+## Output format
 
-`presentation.json` 是最完整的结果。常用字段如下：
+`presentation.json` is the canonical and most complete output. Important fields include:
 
-| 字段 | 含义 |
+| Field | Meaning |
 |---|---|
-| `schema_version` | 当前数据契约版本，现为 `1.0` |
-| `source_sha256` | 输入文件内容哈希，用于区分不同版本 |
-| `slides[].number` | 1 开始的幻灯片页码 |
-| `slides[].text_blocks` | 标题/正文、层级、链接与来源 shape |
-| `slides[].tables` | 表格二维单元格数据 |
-| `slides[].charts` | 图表标题、分类、序列和数值 |
-| `slides[].images` | 图片哈希、路径、alt text 与可选 OCR |
-| `slides[].notes` | 演讲者备注，不与正文混合 |
-| `order` / `z_order` | 视觉阅读顺序 / PowerPoint 原始堆叠顺序 |
-| `bbox` | points 坐标和 0–1 归一化坐标 |
-| `warnings` | 缺少 alt text、宏、未支持对象等限制 |
+| `schema_version` | Data-contract version; currently `1.0` |
+| `source_sha256` | Content hash of the input file for version identification |
+| `slides[].number` | One-based slide number |
+| `slides[].text_blocks` | Titles/body text, paragraph levels, links, and source shapes |
+| `slides[].tables` | Two-dimensional native table-cell data |
+| `slides[].charts` | Chart titles, categories, series, and values |
+| `slides[].images` | Image hashes, paths, alt text, and optional OCR results |
+| `slides[].notes` | Speaker notes, kept separate from slide content |
+| `order` / `z_order` | Visual reading order / original PowerPoint stacking order |
+| `bbox` | Coordinates in points and normalized `0–1` coordinates |
+| `warnings` | Missing alt text, macros, unsupported objects, and other limitations |
 
-完整约束见 [JSON Schema](schemas/pptx-extraction.presentation.v1.schema.json)。
+See the [JSON Schema](schemas/pptx-extraction.presentation.v1.schema.json) for the complete contract.
 
-## 常用工作流
+## Common workflows
 
-### 只检查内容概况，不生成文件
+### Inspect a presentation without writing files
 
 ```bash
 pptx-extraction inspect "slides.pptx"
 ```
 
-输出完整 JSON 记录，同时隐藏作者等元数据：
+Print the complete JSON record while redacting author-related metadata:
 
 ```bash
 pptx-extraction inspect "slides.pptx" --full --redact-metadata
 ```
 
-### 批量处理目录
+### Process a directory in batch
 
-递归发现目录中的受支持文件，使用 4 个工作线程：
+Recursively discover supported files and process them with four workers:
 
 ```bash
 pptx-extraction batch "./decks" --output "./output" --workers 4 --redact-metadata
 ```
 
-同时传入多个文件或目录：
+You may also provide multiple files and directories:
 
 ```bash
 pptx-extraction batch "deck-a.pptx" "deck-b.pptx" "./more-decks" -o "./output"
 ```
 
-每个输入会写入独立目录，目录名包含源文件哈希前缀；单个文件失败不会中断其他任务。只要有一项
-失败，命令退出码为 `4`，失败原因会写在终端 JSON 中。
+Each input is written to a separate directory whose name contains the source hash prefix. A failure
+in one file does not stop the remaining jobs. If any item fails, the command exits with code `4` and
+reports the reason in the terminal JSON output.
 
-### 识别嵌入图片中的文字
+### Recognize text inside embedded images
 
-先安装 Python OCR 适配器：
+Install the Python OCR adapter:
 
 ```bash
 python -m pip install -e ".[ocr]"
 ```
 
-再安装系统级 Tesseract 和所需语言包，然后运行：
+Install Tesseract and the required system language packs, then run:
 
 ```bash
 pptx-extraction extract "slides.pptx" -o "output/ocr" \
   --ocr tesseract \
-  --ocr-language "chi_sim+eng"
+  --ocr-language "eng"
 ```
 
-OCR 只处理 PPTX 中的嵌入图片，不会渲染整页幻灯片。同一图片即使跨页重复，也只识别一次。
+For Simplified Chinese and English, use `--ocr-language "chi_sim+eng"`. OCR applies only to images
+embedded in the OOXML package; it does not render or OCR entire slides. A duplicated image is
+recognized only once, even when it appears on multiple slides.
 
-### 转换旧版 `.ppt`
+### Convert legacy `.ppt` files
 
-先安装 LibreOffice，并确保 `soffice` 在 `PATH` 中：
+Install LibreOffice and ensure that `soffice` is available on `PATH`:
 
 ```bash
 pptx-extraction convert "legacy.ppt" --output "converted"
 pptx-extraction extract "converted/legacy.pptx" --output "output/legacy"
 ```
 
-如果 `soffice` 不在 `PATH`，Windows 可显式指定：
+On Windows, provide an explicit executable path when `soffice` is not on `PATH`:
 
 ```powershell
 pptx-extraction convert "legacy.ppt" -o "converted" --soffice "$env:ProgramFiles\LibreOffice\program\soffice.exe"
 ```
 
-### Python API
+### Use the Python API
 
 ```python
 from pptx_extraction import ExtractionOptions, extract_file
@@ -241,16 +249,16 @@ print(result.output_dir)
 print(result.record.summary)
 ```
 
-### HTTP API
+### Run the HTTP API
 
-安装并启动：
+Install the API dependencies and start the service:
 
 ```bash
 python -m pip install -e ".[api]"
 uvicorn pptx_extraction.api:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-新开一个 PowerShell 窗口上传文件并轮询结果：
+Open another PowerShell window, upload a file, and poll the job:
 
 ```powershell
 $job = curl.exe -s -X POST -F "file=@slides.pptx" http://127.0.0.1:8000/v1/jobs | ConvertFrom-Json
@@ -270,24 +278,27 @@ if ($status.status -ne "succeeded") {
 curl.exe -s "http://127.0.0.1:8000/v1/jobs/$($job.id)/result" -o presentation.json
 ```
 
-状态为 `succeeded` 后才能读取结果。接口说明和生产部署边界见 [docs/api.md](docs/api.md)。
+The result endpoint is available only after the job reaches `succeeded`. See
+[docs/api.md](docs/api.md) for the complete API contract and production deployment boundaries.
 
-## CLI 速查
+## CLI reference
 
-| 命令 | 用途 | 是否写文件 |
+| Command | Purpose | Writes files |
 |---|---|---|
-| `pptx-extraction validate FILE` | 检查格式、OOXML 结构与安全限制 | 否 |
-| `pptx-extraction inspect FILE` | 查看页数和元素统计 | 否 |
-| `pptx-extraction extract FILE -o DIR` | 提取单个文件 | 是 |
-| `pptx-extraction batch INPUT... -o DIR` | 并发批处理文件/目录 | 是 |
-| `pptx-extraction convert FILE.ppt -o DIR` | 通过 LibreOffice 转换旧格式 | 是 |
-| `pptx-extraction COMMAND --help` | 查看某个命令的全部参数 | 否 |
+| `pptx-extraction validate FILE` | Check the format, OOXML structure, and security limits | No |
+| `pptx-extraction inspect FILE` | Show slide and element statistics | No |
+| `pptx-extraction extract FILE -o DIR` | Extract one presentation | Yes |
+| `pptx-extraction batch INPUT... -o DIR` | Process files and directories concurrently | Yes |
+| `pptx-extraction convert FILE.ppt -o DIR` | Convert a legacy presentation through LibreOffice | Yes |
+| `pptx-extraction COMMAND --help` | Show all options for a command | No |
 
-稳定退出码：`0` 成功，`2` 参数/输入问题，`3` 提取失败，`4` 批处理部分失败，`5` 缺少可选依赖。
+Stable exit codes: `0` success, `2` argument/input error, `3` extraction failure, `4` partial batch
+failure, and `5` missing optional dependency.
 
 ## Agent Skill
 
-可复用 Skill 位于 [`agent-skill/pptx-extraction`](agent-skill/pptx-extraction)：
+The reusable Agent Skill is located at
+[`agent-skill/pptx-extraction`](agent-skill/pptx-extraction):
 
 ```bash
 python agent-skill/pptx-extraction/scripts/extract.py \
@@ -295,10 +306,11 @@ python agent-skill/pptx-extraction/scripts/extract.py \
   --output "output/agent-run"
 ```
 
-它会默认脱敏作者类元数据，并指导 Agent 区分正文、备注、图表值和 OCR 派生文本。Skill 已通过官方
-`quick_validate.py`，发布脚本会将项目和 Skill 生成两个独立 ZIP。
+The Skill redacts author-related metadata by default and teaches agents to distinguish slide text,
+speaker notes, native chart values, and OCR-derived text. It passes the official `quick_validate.py`
+validation. The release script packages the application and Agent Skill as independent archives.
 
-## 开发与验证
+## Development and verification
 
 ```bash
 python -m pip install -e ".[dev,api]"
@@ -311,42 +323,47 @@ python scripts/privacy_scan.py
 python scripts/build_release.py
 ```
 
-测试在运行时合成 PPTX，不提交真实演示文稿、导出图片或个人音频。CI 覆盖 Python 3.10–3.12。
+Tests generate synthetic presentations at runtime. No real presentations, exported images, or
+personal audio files are committed. CI covers Python 3.10 through 3.12.
 
 <details>
-<summary><strong>常见问题：输出目录已存在</strong></summary>
+<summary><strong>Troubleshooting: the output directory already exists</strong></summary>
 
-程序不会默认覆盖非空目录。选择新的 `--output`，或确认目录只包含本次旧结果后添加
-`--overwrite`。不要对工作区根目录、用户目录或不确定的路径使用覆盖选项。
+The extractor does not overwrite a non-empty directory by default. Choose a new `--output` path, or
+add `--overwrite` only after confirming that the directory contains disposable results from an
+earlier run. Never use overwrite against a workspace root, user directory, or uncertain path.
 
 </details>
 
 <details>
-<summary><strong>常见问题：PPTX 中明明有内容，但结果缺失</strong></summary>
+<summary><strong>Troubleshooting: visible slide content is missing</strong></summary>
 
-检查 `warnings`。SmartArt、公式、OLE、动画、音视频和图片型整页可能没有可直接读取的语义。
-图片中的文字可尝试 Tesseract；整页图片型幻灯片需要额外的渲染/整页 OCR 工具。
+Review the output `warnings`. SmartArt, equations, OLE objects, animations, audio/video, and slides
+that consist entirely of images may not expose directly readable semantics. Tesseract can recover
+text from embedded images; image-only slides require a separate slide-rendering and full-slide OCR
+workflow.
 
 </details>
 
 <details>
-<summary><strong>常见问题：OCR 或 LibreOffice 不可用</strong></summary>
+<summary><strong>Troubleshooting: OCR or LibreOffice is unavailable</strong></summary>
 
-OCR 同时需要 `.[ocr]`、Tesseract 可执行程序和语言包。旧版 PPT 转换需要 LibreOffice 的
-`soffice`。这两项都是可选依赖，不影响普通 `.pptx` 文本提取。
+OCR requires the `.[ocr]` extra, a Tesseract executable, and the appropriate language packs. Legacy
+PowerPoint conversion requires LibreOffice's `soffice`. Both features are optional and do not affect
+standard `.pptx` extraction.
 
 </details>
 
-## 完整文档
+## Documentation
 
-- [需求分析与验收标准](docs/requirements.md)
-- [系统架构与模块职责](docs/architecture.md)
-- [旧项目审计与逐文件升级计划](docs/upgrade-plan.md)
+- [Requirements and acceptance criteria](docs/requirements.md)
+- [Architecture and module responsibilities](docs/architecture.md)
+- [Legacy audit and file-level upgrade plan](docs/upgrade-plan.md)
 - [HTTP API](docs/api.md)
-- [安全策略](SECURITY.md)
-- [更新现有仓库与发布 Release](docs/release.md)
-- [参与贡献](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Repository update and release guide](docs/release.md)
+- [Contributing guide](CONTRIBUTING.md)
 
 ## License
 
-[MIT](LICENSE)
+Released under the [MIT License](LICENSE).
